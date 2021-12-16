@@ -1,3 +1,5 @@
 from django.db import models
 
-# Create your models here.
+class Appointment(models.Model):
+    services = models.TextField()
+    date_time = models.DateTimeField()

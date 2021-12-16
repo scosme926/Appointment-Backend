@@ -4,6 +4,9 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
+from appointment.settings import SECRET_KEY
+from .models import Appointment
+from datetime import datetime
 
 
 def version_endpoint(request):
@@ -34,7 +37,7 @@ def hello_endpoint(request):
 def login_endpoint(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        username = data.get("username")
+        username = data.get("email")
         password = data.get("password")
 
 
@@ -57,6 +60,9 @@ def login_endpoint(request):
 
         return JsonResponse({
             "token": encoded_jwt,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
         })
 
     else:
@@ -69,14 +75,14 @@ def login_endpoint(request):
 def register_endpoint(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        first_name = data.get("firstName")
-        last_name = data.get("lastName")
+        first_name = data.get("fname")
+        last_name = data.get("lname")
         email = data.get("email")
         password = data.get("password")
+        username = email
 
 
-
-        user = User.objects.create_user(email, password)
+        user = User.objects.create_user(username, email, password)
         user.first_name = first_name
         user.last_name = last_name
         user.save()
@@ -93,3 +99,37 @@ def register_endpoint(request):
         return JsonResponse({
         "msg": "method not allowed",
         }, status=405)
+
+
+
+def list_create_appointment_api_endpoint(request):
+    if request.method == "GET":
+        results = [
+            {
+                "id": 1,
+                "appointment_services": "",
+                "appointment_dt": "",
+            }
+        ]
+        return JsonResponse({"results": results})
+    elif request.method == "POST":
+        try:
+            data = json.loads(request.body)
+        except:
+            return JsonResponse({"msg":"Fill the forms"}, status=400 )
+
+
+        appointment_services = data.get("appointment_services")
+        appointment_dt = data.get("appointment_dt")
+        appointment_dt = datetime.strptime(appointment_dt, "%a, %d %b %Y %H:%M:%S %Z")
+
+
+        appointment = Appointment.objects.create(
+            services=appointment_services,
+            date_time=appointment_dt,
+        )
+
+
+        return JsonResponse({"console": "Appointment created"})
+    else:
+        return JsonResponse({"message" : "something went wrong, try again"}, status=405)
