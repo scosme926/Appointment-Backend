@@ -9,6 +9,7 @@ from .models import Appointment
 from datetime import datetime
 
 
+
 def version_endpoint(request):
     return JsonResponse({
         "version": 3.0,
@@ -104,14 +105,28 @@ def register_endpoint(request):
 
 def list_create_appointment_api_endpoint(request):
     if request.method == "GET":
-        results = [
-            {
-                "id": 1,
-                "appointment_services": "",
-                "appointment_dt": "",
+        appointments = Appointment.objects.all().order_by("date_time")
+        appointments_count = Appointment.objects.count()
+
+        limit_numb = request.GET.get("limit", 25)
+        paginator = Paginator(appointments, limit_numb)
+        page_numb = request.GET.get("page")
+        page_obj = paginator.get_page(page_numb)
+
+        results = []
+        for appointment in page_obj:
+            r = {
+                "id": appointment.id,
+                "services": appointment.services,
+                "date_time": appointment.date_time,
+                "decision": appointment.decision,
             }
-        ]
-        return JsonResponse({"results": results})
+            results.append(r)
+
+        return JsonResponse({
+            "count": appointments_count,
+            "results": results,
+        })
     elif request.method == "POST":
         try:
             data = json.loads(request.body)
